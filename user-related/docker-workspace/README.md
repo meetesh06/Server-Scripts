@@ -225,10 +225,11 @@ CONTAINER ID   IMAGE          COMMAND                CREATED        STATUS      
 d3d1e0d2625e   lorenzo-wd     "/bin/bash"            4 days ago     Up 4 days                         lorenzo-wd
 ```
 
-We can check the cgroup parent of our newly created container using `docker inspect`.
+We can check the cgroup parent of our newly created container using `docker inspect`. 
+As expected it says `/c16_1`.
 
 ```bash
-meetesh@server:/sys/fs/cgroup/cpu/docker$ docker inspect --format '{{.HostConfig.CgroupParent}}' 878c6ae6b53b
+docker inspect --format '{{.HostConfig.CgroupParent}}' 878c6ae6b53b
 /c16_1
 ```
 
@@ -253,7 +254,13 @@ cset:
         c32_1      64-95 n       0 n     0    0 /c32_1
         c16_7    224-239 n       0 n     0    0 /c16_7
         c16_5    192-207 n       0 n     0    0 /c16_5
+```
 
+If we use the `-r` flag, we can recursively list all the sub groups. 
+Doing this we find the name of the cgroup that is being by our newly created container.
+(here is happens to be `878c6ae6b53be2ab1ee3836429513e943e11dd89968709797b0a758164c01d1d`).
+
+```bash
 meetesh@server:~/docker-wd$ cset set -r # We can use -r to recursively list all the sub groups
 cset: 
          Name       CPUs-X    MEMs-X Tasks Subs Path
@@ -276,13 +283,17 @@ cset:
  ...
 ```
 
-We see that our docker container has access to the core group `c16_1`, which means we have access to cores 128-143. But how do we know it is working?
 
-#### Diving Deeper into isolation
+### Great! It looks like its working, but is it really?
+We saw that our docker container has access to the core group `c16_1`, which means we have access to cores 128-143. But how do we know it is working?
+
+**Diving Deeper into isolation**
 
 Inside the docker container we will run a script that generates load for N=20 cores.
-Two things should be observed, firstly, the generated load should be distributed only across cores numbered 128-143.
-Secondly, as we have more threads than cores, some processes will share some of the cores.
+Two things should be observed: 
+
+> Firstly, the generated load should be distributed only across cores numbered 128-143.
+> Secondly, as we have more processes than cores, some processes will share some of the cores.
 
 We first run the following load generation script from within the container.
 
@@ -323,8 +334,37 @@ trap "killall dd; exit" SIGINT SIGTERM
 wait
 ```
 
-Now we login into the from a different terminal window and check the processes that exist on the server, we can easily find the processes relevant to the generated load using `ps -aux | grep load_generator.sh`. Finally all we need to do is check the core ID assigned to each of these processes. We can use a `pid-check.sh` to do this.
+Now we login into the from a different terminal window and check the processes that exist on the server, we can easily find the processes relevant to the generated load using `ps -aux | grep load_generator.sh`. 
 
+```bash
+meetesh@server:~$ ps -aux | grep load_generator.sh
+meetesh   205367  0.0  0.0   4364  3252 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205368  0.3  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205369  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205370  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205372  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205374  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205376  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205378  0.3  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205380  0.3  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205382  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205384  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205386  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205389  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205393  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205396  0.3  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205399  0.3  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205401  0.3  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205405  0.3  0.0   4364  1764 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205407  0.3  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205410  0.4  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   205412  0.3  0.0   4364  1784 pts/1    S+   19:08   0:00 bash load_generator.sh 20
+meetesh   271672  0.0  0.0   6620  2288 pts/9    S+   19:11   0:00 grep --color=auto load_generator.sh
+```
+
+Finally all we need to do is check the core ID assigned to each of these processes. We can use a `pid-check.sh` to do this.
+
+**pid-check.sh**
 ```bash
 #!/bin/bash
 

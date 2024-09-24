@@ -1,4 +1,12 @@
 #!/bin/bash
+
+#
+# @author Meetesh Kalpesh Mehta
+# @email meeteshmehta@cse.iitb.ac.in
+# @create date 2024-09-24 23:29:28
+# @modify date 2024-09-24 23:29:19
+#
+
 date
 
 username=""

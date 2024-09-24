@@ -148,7 +148,7 @@ d3d1e0d2625e   lorenzo-wd     "/bin/bash"            4 days ago     Up 4 days   
 #### `startIsolated.sh`
 This script is used to start a container in isolated mode.
 It lists the 
-The CPU cores from the `docker` core group will be accessible to the container.
+The CPU cores from the `selected` core group will be accessible to the container.
 
 ```bash
 meetesh@server:~/docker-scripts$ bash startIsolated.sh 

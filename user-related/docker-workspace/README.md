@@ -180,10 +180,13 @@ d3d1e0d2625e   lorenzo-wd     "/bin/bash"            4 days ago     Up 4 days   
 
 ```bash
 meetesh@server:~/docker-scripts$ docker exec -it meetesh-wd bash
+
 To run a command as administrator (user "root"), use "sudo <command>".
 See "man sudo_root" for details.
 
 meetesh@878c6ae6b53b:~$ echo "Hello inside the container" > wd/helloFile
+meetesh@878c6ae6b53b:~$ exit
+
 meetesh@server:~/docker-scripts$ cd ~/docker-wd/
 meetesh@server:~/docker-wd$ ls
 helloFile

@@ -295,7 +295,7 @@ Two things should be observed:
 > Firstly, the generated load should be distributed only across cores numbered 128-143.
 > Secondly, as we have more processes than cores, some processes will share some of the cores.
 
-We first run the following load generation script from within the container.
+We first run the following load generation script (with N=20) from within the container.
 
 **load_generator.sh**
 ```bash
@@ -332,6 +332,12 @@ trap "killall dd; exit" SIGINT SIGTERM
 
 # Wait indefinitely
 wait
+```
+
+Running the load on the server.
+```bash
+meetesh@878c6ae6b53b:~/wd$ bash load_generator.sh 20
+Generating random CPU load on 20 cores...
 ```
 
 Now we login into the from a different terminal window and check the processes that exist on the server, we can easily find the processes relevant to the generated load using `ps -aux | grep load_generator.sh`. 
